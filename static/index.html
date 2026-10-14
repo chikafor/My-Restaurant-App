@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Artisan Flame Grill & Kitchen | Food Ordering & Delivery</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+
+  <!-- Top Global Header & Role Switcher -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand" onclick="App.switchRole('customer')">
+        <div class="brand-icon">🔥</div>
+        <div>
+          <div class="brand-title">
+            Artisan Flame Grill
+            <span class="status-pill open" id="header-store-pill">
+              <span class="pulse-dot"></span> Open Now
+            </span>
+          </div>
+          <div class="brand-subtitle">
+            <span>📍 42 Gourmet Way (3 km Delivery Radius)</span>
+            <span>•</span>
+            <span class="status-pill live-sse" id="sse-status-pill">
+              <span class="pulse-dot"></span> Live Sync
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Role Switcher Bar -->
+      <nav class="role-nav" aria-label="Role Navigation">
+        <button type="button" class="role-btn active" data-view-target="customer">
+          🛒 Customer App
+        </button>
+        <button type="button" class="role-btn" data-view-target="kitchen">
+          🍳 Kitchen (KDS)
+        </button>
+        <button type="button" class="role-btn" data-view-target="driver">
+          🛵 Driver View
+        </button>
+        <button type="button" class="role-btn" data-view-target="admin">
+          📊 Admin Portal
+        </button>
+      </nav>
+
+      <!-- User Account & Cart Controls -->
+      <div class="header-actions">
+        <div class="user-badge" id="header-user-badge" title="Click to manage account / switch test profiles">
+          <div class="user-avatar" id="header-user-avatar">S</div>
+          <div class="user-info">
+            <span class="user-name" id="header-user-name">Sarah Jenkins</span>
+            <span class="user-role" id="header-user-role">customer</span>
+          </div>
+        </div>
+
+        <button type="button" class="btn-cart" id="btn-open-cart">
+          <span>🛍️ Cart</span>
+          <span class="cart-counter" id="header-cart-counter">0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Emergency Store Closed Alert Banner (Controlled by Admin) -->
+  <div id="store-status-banner" style="display: none;"></div>
+
+  <!-- Main Multi-View Container -->
+  <main class="main-content">
+
+    <!-- =============================================================
+         1. CUSTOMER INTERFACE
+         ============================================================= -->
+    <section class="view-section active" id="view-customer">
+      
+      <!-- Hero Banner -->
+      <div class="hero-banner">
+        <div class="hero-text">
+          <h1>Handcrafted Burgers & Wood-Fired Feast</h1>
+          <p>Fresh artisan burgers smashed to order, 72-hour fermented sourdough pizzas, and wholesome bowls delivered hot to your doorstep within 3 km.</p>
+          <div class="restaurant-meta-pills">
+            <div class="meta-pill">⚡ 3.0 km Strict Delivery Zone</div>
+            <div class="meta-pill">⏱️ 25–35 Min Average Prep & Delivery</div>
+            <div class="meta-pill">💳 Online Cards, Wallet or Cash on Delivery</div>
+            <button type="button" id="btn-enable-push-notifications" class="meta-pill" style="cursor: pointer; background: rgba(46, 213, 115, 0.25); border-color: #2ed573;">
+              🔔 Enable Push Notifications
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Order Tracking Section (Shows when customer has active orders) -->
+      <div id="customer-active-orders-section"></div>
+
+      <!-- Fulfillment Bar (Takeaway vs Delivery within 3 km Geofence) -->
+      <div class="fulfillment-bar">
+        <div class="fulfillment-header">
+          <div>
+            <span style="font-size: 0.85rem; font-weight: 700; color: #475569; text-transform: uppercase;">How would you like your food?</span>
+            <div style="font-size: 1.15rem; font-weight: 800; color: #0f172a;">Select Fulfillment Method</div>
+          </div>
+
+          <div class="segmented-toggle">
+            <button type="button" class="segmented-btn active" data-fulfillment="delivery">
+              🛵 Local Delivery (3 km max)
+            </button>
+            <button type="button" class="segmented-btn" data-fulfillment="pickup">
+              🛍️ Takeaway / Counter Pickup
+            </button>
+          </div>
+        </div>
+
+        <div id="fulfillment-config-panel"></div>
+      </div>
+
+      <!-- Menu Controls (Category Pills + Search) -->
+      <div class="menu-controls">
+        <div class="category-pills" id="category-pills-list"></div>
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="menu-search-input" placeholder="Search menu items..." />
+        </div>
+      </div>
+
+      <!-- Food Menu Grid -->
+      <div class="menu-grid" id="menu-items-grid"></div>
+
+      <!-- Floating Support Help Button for Customer -->
+      <div style="position: fixed; bottom: 1.5rem; left: 1.5rem; z-index: 900;">
+        <button type="button" id="btn-open-customer-chat" style="background: #1e293b; color: #ffffff; border: none; padding: 0.75rem 1.25rem; border-radius: 99px; font-weight: 700; font-size: 0.875rem; box-shadow: 0 10px 25px rgba(0,0,0,0.2); cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: transform 0.2s ease;">
+          💬 Chat with Restaurant
+        </button>
+      </div>
+
+    </section>
+
+    <!-- =============================================================
+         2. KITCHEN DISPLAY SYSTEM (KDS) & OPERATIONS INTERFACE
+         ============================================================= -->
+    <section class="view-section" id="view-kitchen">
+      <div class="kitchen-toolbar">
+        <div>
+          <h2 style="font-size: 1.35rem; font-weight: 800; color: #0f172a;">Kitchen Fulfillment & Display System</h2>
+          <p style="font-size: 0.85rem; color: #64748b;">Live kitchen order feed, manual acceptance, driver dispatch, and dynamic menu inventory controls.</p>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+          <button type="button" id="btn-test-kds-audio" style="background: #f1f5f9; border: 1px solid #cbd5e1; padding: 0.45rem 0.85rem; border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer;">
+            🔊 Test Kitchen Chime
+          </button>
+
+          <div class="segmented-toggle">
+            <button type="button" class="segmented-btn active" id="kds-tab-queue">
+              📋 Orders Queue
+            </button>
+            <button type="button" class="segmented-btn" id="kds-tab-inventory">
+              📦 Menu Inventory Toggles
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kitchen View Tab 1: Orders Queue -->
+      <div id="kds-orders-view">
+        <div class="kitchen-columns">
+          
+          <!-- Column 1: Incoming Orders (Requires Manual Accept / Reject) -->
+          <div class="k-col" style="border-top: 4px solid #ef4444;">
+            <div class="k-col-header">
+              <span class="k-col-title">🔔 Incoming Orders</span>
+              <span class="k-badge" id="kds-count-incoming">0</span>
+            </div>
+            <div id="kds-col-incoming"></div>
+          </div>
+
+          <!-- Column 2: In Kitchen / Preparing -->
+          <div class="k-col" style="border-top: 4px solid #f59e0b;">
+            <div class="k-col-header">
+              <span class="k-col-title">🍳 Cooking / Preparing</span>
+              <span class="k-badge" id="kds-count-preparing">0</span>
+            </div>
+            <div id="kds-col-preparing"></div>
+          </div>
+
+          <!-- Column 3: Ready for Pickup / Dispatch -->
+          <div class="k-col" style="border-top: 4px solid #10b981;">
+            <div class="k-col-header">
+              <span class="k-col-title">🛵 Ready for Dispatch / Counter</span>
+              <span class="k-badge" id="kds-count-ready">0</span>
+            </div>
+            <div id="kds-col-ready"></div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Kitchen View Tab 2: Dynamic Menu Inventory Control (Sold Out / In Stock) -->
+      <div id="kds-inventory-view" style="display: none;">
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; max-width: 900px; margin: 0 auto;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
+            <div>
+              <h3 style="font-size: 1.15rem; font-weight: 800; color: #0f172a;">Dynamic 1-Tap Stock Management</h3>
+              <p style="font-size: 0.85rem; color: #64748b;">Instantly toggle menu dishes as "Sold Out". Changes reflect immediately on all customer screens without reloading.</p>
+            </div>
+            <input type="text" id="kds-inv-search" placeholder="Filter dishes..." style="padding: 0.5rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.85rem;" />
+          </div>
+
+          <div id="kds-inventory-items-list"></div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- =============================================================
+         3. DELIVERY DRIVER INTERFACE
+         ============================================================= -->
+    <section class="view-section" id="view-driver">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2 style="font-size: 1.35rem; font-weight: 800; color: #0f172a;">Delivery Driver Portal</h2>
+          <p style="font-size: 0.85rem; color: #64748b;">Active 3 km delivery orders, navigation notes, customer contacts, and status updates.</p>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <span style="font-size: 0.85rem; font-weight: 700; color: #475569;">Logged in Driver:</span>
+          <select id="driver-user-switcher" style="padding: 0.45rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 8px; font-weight: 700;">
+            <option value="4">Alex 'Speedy' Vance (E-Moped)</option>
+            <option value="5">Samira Chen (Delivery Scooter)</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 2rem;">
+        <h3 style="font-size: 1.05rem; font-weight: 800; color: #1e293b; margin-bottom: 1rem;">🚀 Active Assigned Deliveries</h3>
+        <div class="driver-grid" id="driver-assigned-orders"></div>
+      </div>
+
+      <div>
+        <h3 style="font-size: 1.05rem; font-weight: 800; color: #1e293b; margin-bottom: 1rem;">📋 Completed Deliveries Today</h3>
+        <div id="driver-history-orders"></div>
+      </div>
+    </section>
+
+    <!-- =============================================================
+         4. ADMIN & MANAGEMENT PORTAL
+         ============================================================= -->
+    <section class="view-section" id="view-admin">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2 style="font-size: 1.35rem; font-weight: 800; color: #0f172a;">Restaurant Management & Analytics Portal</h2>
+          <p style="font-size: 0.85rem; color: #64748b;">Business metrics, operating hours & emergency switch, staff accounts, and support desk.</p>
+        </div>
+      </div>
+
+      <!-- Admin Tabs Navigation -->
+      <div class="admin-tabs">
+        <button type="button" class="admin-tab-btn active" data-admin-tab="analytics">
+          📈 Business Analytics
+        </button>
+        <button type="button" class="admin-tab-btn" data-admin-tab="operations">
+          ⚙️ Operating Hours & Settings
+        </button>
+        <button type="button" class="admin-tab-btn" data-admin-tab="staff">
+          👥 Staff & Driver Accounts
+        </button>
+        <button type="button" class="admin-tab-btn" data-admin-tab="support">
+          💬 Customer Support Desk
+        </button>
+      </div>
+
+      <!-- Tab 1: Business Analytics -->
+      <div id="admin-sec-analytics">
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 1rem;">
+          <select id="analytics-period-select" style="padding: 0.45rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-weight: 700; font-size: 0.85rem;">
+            <option value="all">Period: All Time</option>
+            <option value="today">Period: Today</option>
+            <option value="week">Period: Last 7 Days</option>
+            <option value="month">Period: Last 30 Days</option>
+          </select>
+        </div>
+
+        <div class="kpi-row">
+          <div class="kpi-card">
+            <div class="kpi-title">Total Revenue</div>
+            <div class="kpi-val" id="kpi-total-revenue">$0.00</div>
+            <div style="font-size: 0.75rem; color: #166534; font-weight: 600;">Net sales across all orders</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-title">Total Orders Volume</div>
+            <div class="kpi-val" id="kpi-total-orders">0</div>
+            <div style="font-size: 0.75rem; color: #64748b;">Processed orders</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-title">Average Order Value (AOV)</div>
+            <div class="kpi-val" id="kpi-avg-order-value">$0.00</div>
+            <div style="font-size: 0.75rem; color: #64748b;">Average spend per ticket</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-title">Fulfillment Ratio</div>
+            <div class="kpi-val" id="kpi-ratio" style="font-size: 1.3rem; margin-top: 0.4rem;">—</div>
+            <div style="font-size: 0.75rem; color: #64748b;">Delivery vs Pickup distribution</div>
+          </div>
+        </div>
+
+        <div class="chart-grid">
+          <!-- Top Selling Items -->
+          <div class="chart-card">
+            <h4>🏆 Most Popular Dishes (Top Sellers)</h4>
+            <div id="analytics-top-items"></div>
+          </div>
+
+          <!-- Peak Ordering Hours -->
+          <div class="chart-card">
+            <h4>⏱️ Peak Ordering Hours Distribution</h4>
+            <div id="analytics-hourly-chart"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Operations & Operating Hours -->
+      <div id="admin-sec-operations" style="display: none;">
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.75rem; max-width: 800px;">
+          <h3 style="font-size: 1.2rem; font-weight: 800; color: #0f172a; margin-bottom: 0.5rem;">Store Operations & Operating Schedule</h3>
+          <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 1.5rem;">Manage emergency open/closed status and store delivery geofence settings.</p>
+
+          <form id="store-hours-form">
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1.25rem; margin-bottom: 1.5rem;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                <div>
+                  <strong style="color: #0f172a; font-size: 1rem;">Emergency Store Status Switch</strong>
+                  <div style="font-size: 0.8rem; color: #64748b;">Toggle off during peak kitchen rushes or emergency closures to pause new customer orders.</div>
+                </div>
+                <label style="position: relative; display: inline-block; width: 52px; height: 28px;">
+                  <input type="checkbox" id="setting-store-open" style="opacity: 0; width: 0; height: 0;" />
+                  <span class="switch-slider" id="toggle-slider"></span>
+                </label>
+              </div>
+
+              <div>
+                <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #475569; margin-bottom: 0.35rem;">Store Status Custom Notice (Shown to Customers):</label>
+                <input type="text" id="setting-store-msg" style="width: 100%; padding: 0.55rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem;" />
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+              <div>
+                <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #475569; margin-bottom: 0.35rem;">Restaurant Address:</label>
+                <input type="text" id="setting-rest-address" style="width: 100%; padding: 0.55rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem;" />
+              </div>
+              <div>
+                <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #475569; margin-bottom: 0.35rem;">Delivery Radius Boundary (km):</label>
+                <input type="number" id="setting-delivery-radius" step="0.1" style="width: 100%; padding: 0.55rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem;" />
+              </div>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+              <label style="display: block; font-size: 0.8rem; font-weight: 700; color: #475569; margin-bottom: 0.35rem;">Standard 3km Delivery Fee ($):</label>
+              <input type="number" id="setting-delivery-fee" step="0.01" style="max-width: 200px; padding: 0.55rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem;" />
+            </div>
+
+            <button type="submit" style="background: #ff4757; color: #ffffff; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 800; font-size: 0.95rem; cursor: pointer;">
+              Save & Apply Settings
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Tab 3: Staff & Driver User Accounts -->
+      <div id="admin-sec-staff" style="display: none;">
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+            <div>
+              <h3 style="font-size: 1.15rem; font-weight: 800; color: #0f172a;">Staff & Delivery Driver Accounts</h3>
+              <p style="font-size: 0.85rem; color: #64748b;">Create, edit, and toggle active status for kitchen staff and delivery personnel.</p>
+            </div>
+            <button type="button" id="btn-open-add-staff-modal" style="background: #ff4757; color: #ffffff; border: none; padding: 0.55rem 1.1rem; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer;">
+              + Add Staff / Driver
+            </button>
+          </div>
+
+          <div id="admin-staff-list"></div>
+        </div>
+      </div>
+
+      <!-- Tab 4: Customer Support Desk -->
+      <div id="admin-sec-support" style="display: none;">
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; display: grid; grid-template-columns: 340px 1fr; min-height: 550px;">
+          
+          <!-- Tickets Left Column -->
+          <div style="border-right: 1px solid #e2e8f0; overflow-y: auto;">
+            <div style="padding: 1rem; border-bottom: 1px solid #e2e8f0; font-weight: 800; font-size: 0.95rem; color: #0f172a;">
+              Support Inquiries & Chats
+            </div>
+            <div id="admin-support-tickets-list"></div>
+          </div>
+
+          <!-- Messages Thread Right Column -->
+          <div style="display: flex; flex-direction: column;">
+            <div style="padding: 1rem 1.25rem; border-bottom: 1px solid #e2e8f0; background: #f8fafc;" id="admin-support-active-title">
+              <strong>Select a ticket from the left to view customer conversation</strong>
+            </div>
+
+            <div style="flex: 1; padding: 1.25rem; overflow-y: auto;" id="admin-support-chat-messages">
+              <div style="text-align: center; color: #94a3b8; font-size: 0.85rem; padding-top: 3rem;">
+                Select a customer inquiry to read and respond in real-time.
+              </div>
+            </div>
+
+            <form id="admin-support-reply-form" style="padding: 1rem 1.25rem; border-top: 1px solid #e2e8f0; display: flex; gap: 0.75rem;">
+              <input type="text" id="admin-support-reply-input" placeholder="Type reply to customer..." style="flex: 1; padding: 0.65rem 0.9rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.85rem;" />
+              <button type="submit" style="background: #ff4757; color: #ffffff; border: none; padding: 0.65rem 1.25rem; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer;">
+                Send
+              </button>
+            </form>
+          </div>
+
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- =============================================================
+       MODALS & DRAWERS
+       ============================================================= -->
+
+  <!-- 1. Item Customization Modal Drawer -->
+  <div class="modal-overlay" id="customization-modal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title" id="modal-item-title">Customize Item</h3>
+          <p style="font-size: 0.8rem; color: #64748b;" id="modal-item-desc"></p>
+        </div>
+        <button type="button" class="btn-close-modal" id="btn-close-custom-modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div id="modal-option-groups"></div>
+
+        <div class="special-notes-box">
+          <label>Special Instructions / Preparation Notes:</label>
+          <textarea id="modal-special-notes" placeholder="e.g. Dressing on the side, extra spicy, no onions..."></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <div class="qty-stepper">
+          <button type="button" class="qty-btn" id="modal-qty-minus">&minus;</button>
+          <span class="qty-value" id="modal-qty-val">1</span>
+          <button type="button" class="qty-btn" id="modal-qty-plus">&plus;</button>
+        </div>
+
+        <button type="button" class="btn-confirm-add" id="btn-confirm-add-cart">
+          <span>Add to Order</span>
+          <span id="modal-confirm-price">$0.00</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Cart Drawer & Overlay -->
+  <div class="modal-overlay" id="cart-overlay"></div>
+  <div class="cart-drawer" id="cart-drawer">
+    <div class="cart-header">
+      <span class="cart-title">🛍️ Your Order</span>
+      <button type="button" class="btn-close-modal" id="btn-close-cart">&times;</button>
+    </div>
+
+    <div class="cart-items-scroll" id="cart-items-list"></div>
+
+    <div class="cart-summary">
+      <div class="summary-line">
+        <span>Items Subtotal:</span>
+        <span id="cart-subtotal">$0.00</span>
+      </div>
+      <div class="summary-line">
+        <span>Local Delivery Fee (3km):</span>
+        <span id="cart-delivery-fee">$2.99</span>
+      </div>
+      <div class="summary-line">
+        <span>Tax (8%):</span>
+        <span id="cart-tax">$0.00</span>
+      </div>
+      <div class="summary-line total">
+        <span>Estimated Total:</span>
+        <span id="cart-total" style="color: #ff4757;">$0.00</span>
+      </div>
+
+      <div class="payment-method-selector">
+        <label>Payment Method:</label>
+        <div class="payment-radios">
+          <label class="payment-radio-label">
+            <input type="radio" name="payment_method" value="online_card" checked />
+            <span>💳 Online Card</span>
+          </label>
+          <label class="payment-radio-label">
+            <input type="radio" name="payment_method" value="online_wallet" />
+            <span>📱 Mobile Wallet</span>
+          </label>
+          <label class="payment-radio-label">
+            <input type="radio" name="payment_method" value="offline_cash" />
+            <span>💵 Cash on Delivery</span>
+          </label>
+          <label class="payment-radio-label">
+            <input type="radio" name="payment_method" value="offline_card" />
+            <span>💳 Card on Delivery</span>
+          </label>
+        </div>
+      </div>
+
+      <button type="button" class="btn-checkout" id="btn-proceed-checkout">
+        <span>Place Order Now</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 3. Kitchen Reject Reason Modal -->
+  <div class="modal-overlay" id="kds-reject-modal">
+    <div class="modal-dialog" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3 class="modal-title" style="color: #dc2626;">Reject Incoming Order</h3>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.85rem; color: #475569; margin-bottom: 1rem;">
+          Select or state the reason for rejecting this order. The customer will be informed promptly.
+        </p>
+        <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 0.35rem;">Standard Reason:</label>
+        <select id="kds-reject-reason" style="width: 100%; padding: 0.55rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem; margin-bottom: 1rem;">
+          <option value="Kitchen at maximum capacity">Kitchen at maximum capacity</option>
+          <option value="Ingredient / item out of stock">Ingredient / item out of stock</option>
+          <option value="Restaurant closing early">Restaurant closing early</option>
+          <option value="Severe weather / delivery unavailable">Severe weather / delivery unavailable</option>
+        </select>
+
+        <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 0.35rem;">Or Custom Explanation:</label>
+        <input type="text" id="kds-reject-custom" placeholder="Optional custom note..." style="width: 100%; padding: 0.55rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem;" />
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="btn-cancel-kds-reject" style="background: #e2e8f0; border: none; padding: 0.6rem 1rem; border-radius: 6px; font-weight: 700; cursor: pointer;">Cancel</button>
+        <button type="button" id="btn-confirm-kds-reject" style="background: #dc2626; color: #ffffff; border: none; padding: 0.6rem 1.25rem; border-radius: 6px; font-weight: 700; cursor: pointer;">Confirm Rejection</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Admin Add Staff Modal -->
+  <div class="modal-overlay" id="admin-add-staff-modal">
+    <div class="modal-dialog" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Create Staff / Driver Account</h3>
+        <button type="button" class="btn-close-modal" id="btn-close-add-staff-modal">&times;</button>
+      </div>
+      <form id="add-staff-form">
+        <div class="modal-body">
+          <div style="margin-bottom: 0.85rem;">
+            <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 0.25rem;">Full Name:</label>
+            <input type="text" id="staff-add-name" required style="width: 100%; padding: 0.55rem; border: 1px solid #cbd5e1; border-radius: 6px;" />
+          </div>
+          <div style="margin-bottom: 0.85rem;">
+            <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 0.25rem;">Email Address:</label>
+            <input type="email" id="staff-add-email" required style="width: 100%; padding: 0.55rem; border: 1px solid #cbd5e1; border-radius: 6px;" />
+          </div>
+          <div style="margin-bottom: 0.85rem;">
+            <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 0.25rem;">Phone Number:</label>
+            <input type="text" id="staff-add-phone" required style="width: 100%; padding: 0.55rem; border: 1px solid #cbd5e1; border-radius: 6px;" />
+          </div>
+          <div style="margin-bottom: 0.85rem;">
+            <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 0.25rem;">Role:</label>
+            <select id="staff-add-role" style="width: 100%; padding: 0.55rem; border: 1px solid #cbd5e1; border-radius: 6px;">
+              <option value="kitchen">Kitchen Staff (Cook / Chef)</option>
+              <option value="driver">Delivery Driver</option>
+              <option value="admin">Manager / Admin</option>
+            </select>
+          </div>
+          <div style="margin-bottom: 0.85rem;">
+            <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 0.25rem;">Vehicle Type (For Drivers):</label>
+            <input type="text" id="staff-add-vehicle" placeholder="e.g. Electric Scooter, E-Bike, Car" style="width: 100%; padding: 0.55rem; border: 1px solid #cbd5e1; border-radius: 6px;" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" style="background: #ff4757; color: #ffffff; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 800; cursor: pointer; width: 100%;">
+            Create Account
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 5. Customer In-App Chat Modal -->
+  <div class="modal-overlay" id="customer-chat-modal">
+    <div class="modal-dialog" style="max-width: 480px; height: 580px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="customer-chat-header-title">Live Kitchen & Order Support</h3>
+        <button type="button" class="btn-close-modal" id="btn-close-customer-chat">&times;</button>
+      </div>
+      <div class="modal-body" id="customer-chat-messages-container" style="display: flex; flex-direction: column;"></div>
+      <form id="customer-chat-form" style="padding: 1rem; border-top: 1px solid #e2e8f0; display: flex; gap: 0.5rem; background: #f8fafc;">
+        <input type="text" id="customer-chat-input" placeholder="Type a message to the restaurant..." style="flex: 1; padding: 0.6rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.85rem;" />
+        <button type="submit" style="background: #ff4757; color: #ffffff; border: none; padding: 0.6rem 1rem; border-radius: 8px; font-weight: 700; cursor: pointer;">
+          Send
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 6. User Auth & Profile Modal (Google OAuth & Phone OTP) -->
+  <div class="modal-overlay" id="auth-modal">
+    <div class="modal-dialog" style="max-width: 420px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Sign In / Profile</h3>
+        <button type="button" class="btn-close-modal" id="btn-close-auth-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 1.25rem;">
+          Sign in via Google OAuth or verify using your phone number to access saved delivery addresses.
+        </p>
+
+        <!-- Google OAuth Simulation -->
+        <button type="button" id="btn-auth-google" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.65rem; padding: 0.75rem; border: 1px solid #cbd5e1; background: #ffffff; border-radius: 8px; font-weight: 700; font-size: 0.875rem; cursor: pointer; margin-bottom: 1rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+          <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+          Sign in with Google
+        </button>
+
+        <div style="text-align: center; color: #94a3b8; font-size: 0.75rem; margin: 1rem 0; position: relative;">
+          <span style="background: #ffffff; padding: 0 0.5rem; position: relative; z-index: 1;">OR PHONE NUMBER (OTP)</span>
+          <div style="height: 1px; background: #e2e8f0; position: absolute; top: 50%; left: 0; right: 0;"></div>
+        </div>
+
+        <!-- Phone OTP Verification -->
+        <div style="margin-bottom: 0.85rem;">
+          <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 0.25rem;">Phone Number:</label>
+          <input type="tel" id="auth-phone-input" value="+15551234567" style="width: 100%; padding: 0.55rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem;" />
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 0.25rem;">6-Digit OTP Code (Simulated):</label>
+          <input type="text" id="auth-otp-input" value="123456" maxlength="6" style="width: 100%; padding: 0.55rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem;" />
+        </div>
+
+        <button type="button" id="btn-auth-otp" style="width: 100%; background: #1e293b; color: #ffffff; border: none; padding: 0.75rem; border-radius: 8px; font-weight: 700; font-size: 0.875rem; cursor: pointer;">
+          Verify & Sign In
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Global Toast Notification Container -->
+  <div id="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="/static/js/audio.js"></script>
+  <script src="/static/js/customer.js"></script>
+  <script src="/static/js/kitchen.js"></script>
+  <script src="/static/js/driver.js"></script>
+  <script src="/static/js/admin.js"></script>
+  <script src="/static/js/app.js"></script>
+
+</body>
+</html>
